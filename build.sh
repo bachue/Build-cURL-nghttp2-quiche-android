@@ -1,18 +1,19 @@
 #!/bin/bash
 
-# This script builds openssl+libcurl+nghttp2+ngtcp2+nghttp3 libraries for Android
+# This script builds libcurl+nghttp2+quiche libraries for Android
 #
 # Credits:
 # Bachue Zhou, @bachue
-#   https://github.com/bachue/Build-cURL-nghttp2-nghttp3-ngtcp2-android
+#   https://github.com/bachue/Build-cURL-nghttp2-quiche-android
 #
 
 ################################################
 # EDIT this section to Select Default Versions #
 ################################################
 
-LIBCURL="7.72.0"    # https://curl.haxx.se/download.html
+LIBCURL="7.73.0"    # https://curl.haxx.se/download.html
 NGHTTP2="1.41.0"    # https://nghttp2.org/
+QUICHE="0.5.1"      # https://github.com/cloudflare/quiche.git
 
 NDK_VERSION="20b"
 ANDROID_EABI_VERSION="4.9"
@@ -20,7 +21,7 @@ ANDROID_API_VERSION="21"
 
 # Global flags
 buildnghttp2="-2"
-buildngtcp2="-3"
+buildquiche="-q"
 colorflag=""
 
 # Formatting
@@ -42,22 +43,23 @@ usage ()
     echo
     echo -e "${bold}Usage:${normal}"
     echo
-    echo -e "  ${subbold}$0${normal} [-k ${dim}<NDK version>${normal}] [-a ${dim}<Android API version>${normal}] [-e ${dim}<EABI version>${normal}] [-c ${dim}<curl version>${normal}] [-n ${dim}<nghttp2 version>${normal}] [-d] [-f] [-x] [-h]"
+    echo -e "  ${subbold}$0${normal} [-k ${dim}<NDK version>${normal}] [-a ${dim}<Android API version>${normal}] [-e ${dim}<EABI version>${normal}] [-c ${dim}<curl version>${normal}] [-n ${dim}<nghttp2 version>${normal}] [-q ${dim}<quiche version>${normal}] [-d] [-f] [-x] [-h]"
     echo
     echo "         -k <version>   Compile with NDK version (default $NDK_VERSION)"
     echo "         -a <version>   Compile with Android API version (default $ANDROID_API_VERSION)"
     echo "         -e <version>   Compile with EABI version (default $ANDROID_EABI_VERSION)"
     echo "         -c <version>   Build curl version (default $LIBCURL)"
     echo "         -n <version>   Build nghttp2 version (default $NGHTTP2)"
+    echo "         -q <version>   Build quiche version (default $QUICHE)"
     echo "         -d             Compile without HTTP2 support"
-    echo "         -f             Compile without HTTP3 support"
+    echo "         -f             Compile without QUICHE support"
     echo "         -x             No color output"
     echo "         -h             Show usage"
     echo
     exit 127
 }
 
-while getopts "k:a:e:o:c:n:dfxh\?" o; do
+while getopts "k:a:e:o:c:n:q:dfxh\?" o; do
     case "${o}" in
         k)
             NDK_VERSION="${OPTARG}"
@@ -74,11 +76,14 @@ while getopts "k:a:e:o:c:n:dfxh\?" o; do
         n)
             NGHTTP2="${OPTARG}"
             ;;
+        q)
+            QUICHE="${OPTARG}"
+            ;;
         d)
             buildnghttp2=""
             ;;
         f)
-            buildnghttp3=""
+            buildquiche=""
             ;;
         x)
             bold=""
@@ -97,8 +102,8 @@ done
 shift $((OPTIND-1))
 
 ## Welcome
-echo -e "${bold}Build-cURL-nghttp2-nghttp3-ngtcp2${dim}"
-echo "This script builds OpenSSL, nghttp2, ngtcp2, nghttp3 and libcurl for Android devices."
+echo -e "${bold}Build-cURL-nghttp2-quiche${dim}"
+echo "This script builds nghttp2, quiche and libcurl for Android devices."
 echo "Targets: x86, x86_64, armv7, armv7s, arm64 and arm64e"
 echo
 
@@ -119,13 +124,6 @@ export ANDROID_NDK_HOME="$PWD"
 popd > /dev/null
 popd > /dev/null
 
-## OpenSSL Build
-echo
-cd openssl
-echo -e "${bold}Building OpenSSL${normal}"
-./openssl-build.sh -n "$NDK_VERSION" -a "$ANDROID_API_VERSION" -e "$ANDROID_EABI_VERSION" $colorflag
-cd ..
-
 ## Nghttp2 Build
 if [ "$buildnghttp2" == "" ]; then
     NGHTTP2="NONE"
@@ -138,20 +136,13 @@ else
 fi
 
 ## Nghttp3 Build
-if [ -n "$buildngtcp2" ]; then
+if [ "$buildquiche" == "" ]; then
+    QUICHE="NONE"
+else
     echo
-    echo -e "${bold}Building nghttp3 for HTTP3 support${normal}"
-    cd nghttp3
-    ./nghttp3-build.sh -n "$NDK_VERSION" -a "$ANDROID_API_VERSION" -e "$ANDROID_EABI_VERSION" $colorflag
-    cd ..
-fi
-
-## Ngtcp2 Build
-if [ -n "$buildngtcp2" ]; then
-    echo
-    echo -e "${bold}Building ngtcp2 for HTTP3 support${normal}"
-    cd ngtcp2
-    ./ngtcp2-build.sh -n "$NDK_VERSION" -a "$ANDROID_API_VERSION" -e "$ANDROID_EABI_VERSION" $colorflag
+    echo -e "${bold}Building quiche for HTTP3 support${normal}"
+    cd quiche
+    ./quiche-build.sh -v "$QUICHE" -n "$NDK_VERSION" -a "$ANDROID_API_VERSION" -e "$ANDROID_EABI_VERSION" $colorflag
     cd ..
 fi
 
@@ -159,5 +150,16 @@ fi
 echo
 echo -e "${bold}Building Curl${normal}"
 cd curl
-./libcurl-build.sh -v "$LIBCURL" -n "$NDK_VERSION" -a "$ANDROID_API_VERSION" -e "$ANDROID_EABI_VERSION" $colorflag $buildnghttp2 $buildngtcp2
+./libcurl-build.sh -v "$LIBCURL" -n "$NDK_VERSION" -a "$ANDROID_API_VERSION" -e "$ANDROID_EABI_VERSION" $colorflag $buildnghttp2 $buildquiche
 cd ..
+
+rm -rf build
+mkdir -p build/{x86,x86_64,arm,arm64}
+for ARCH in x86 x86_64 arm arm64 
+do
+    cp nghttp2/$ARCH/lib/libnghttp2.a build/$ARCH
+    cp quiche/quiche-build/$ARCH/libquiche.a build/$ARCH
+    cp quiche/quiche-build/$ARCH/openssl/lib/libcrypto.a build/$ARCH
+    cp quiche/quiche-build/$ARCH/openssl/lib/libssl.a build/$ARCH
+    cp curl/$ARCH/lib/libcurl.a build/$ARCH
+done

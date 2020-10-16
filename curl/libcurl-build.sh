@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # This script downloads and builds the Android libcurl library
 
 # Credits:
 # Bachue Zhou, @bachue
-#   https://github.com/bachue/Build-cURL-nghttp2-nghttp3-ngtcp2-android
+#   https://github.com/bachue/Build-cURL-nghttp2-quiche-android
 
 set -e
 
@@ -26,26 +26,26 @@ alertdim="\033[0m${red}\033[2m"
 # set trap to help debug any build errors
 trap 'echo -e "${alert}** ERROR with Build - Check /tmp/curl*.log${alertdim}"; tail -n 3 /tmp/curl*.log' INT TERM EXIT
 
-CURL_VERSION="curl-7.72.0"
+CURL_VERSION="curl-7.73.0"
 NDK_VERSION="20b"
 ANDROID_EABI_VERSION="4.9"
 ANDROID_API_VERSION="21"
 nohttp2="0"
-nohttp3="0"
+noquiche="0"
 
 usage ()
 {
     echo
     echo -e "${bold}Usage:${normal}"
     echo
-    echo -e "  ${subbold}$0${normal} [-v ${dim}<curl version>${normal}] [-a ${dim}<Android API version>${normal}] [-n ${dim}<NDK version>${normal}] [-e ${dim}<EABI version>${normal}] [-x] [-2] [-3] [-h]"
+    echo -e "  ${subbold}$0${normal} [-v ${dim}<curl version>${normal}] [-a ${dim}<Android API version>${normal}] [-n ${dim}<NDK version>${normal}] [-e ${dim}<EABI version>${normal}] [-x] [-2] [-q] [-h]"
     echo
     echo "         -v   version of curl (default $CURL_VERSION)"
     echo "         -n   NDK version (default $NDK_VERSION)"
     echo "         -a   Android API version (default $ANDROID_API_VERSION)"
     echo "         -e   EABI version (default $ANDROID_EABI_VERSION)"
     echo "         -2   compile with nghttp2"
-    echo "         -3   compile with ngtcp2"
+    echo "         -q   compile with quiche"
     echo "         -x   disable color output"
     echo "         -h   show usage"
     echo
@@ -53,7 +53,7 @@ usage ()
     exit 127
 }
 
-while getopts "v:n:a:e:23xh\?" o; do
+while getopts "v:n:a:e:2qxh\?" o; do
     case "${o}" in
         v)
             CURL_VERSION="curl-${OPTARG}"
@@ -70,8 +70,8 @@ while getopts "v:n:a:e:23xh\?" o; do
         2)
             nohttp2="1"
             ;;
-        3)
-            nohttp3="1"
+        q)
+            noquiche="1"
             ;;
         x)
             bold=""
@@ -105,20 +105,16 @@ if [ $nohttp2 == "1" ]; then
 else
     echo "Building without HTTP2 Support (nghttp2)"
     NGHTTP2CFG=""
-    NGHTTP2LIB=""
 fi
 
 # HTTP3 support
-if [ $nohttp3 == "1" ]; then
-    NGHTTP3="${PWD}/../nghttp3"
+if [ $noquiche == "1" ]; then
+    QUICHE="${PWD}/../quiche-build"
     NGTCP2="${PWD}/../ngtcp2"
-    echo "Building with HTTP3 Support (ngtcp2)"
+    echo "Building with HTTP3 Support (quiche)"
 else
-    echo "Building without HTTP3 Support (ngtcp2)"
-    NGHTTP3CFG=""
-    NGHTTP3LIB=""
-    NGTCP2CFG=""
-    NGTCP2LIB=""
+    echo "Building without HTTP3 Support (quiche)"
+    QUICHECFG=""
 fi
 
 CURL="${PWD}/../curl"
@@ -153,7 +149,7 @@ checkTool()
 
 checkTool autoreconf autoconf
 checkTool aclocal automake
-checkTool libtool libtool
+checkTool libtool libtool-bin
 
 buildAndroid() {
     ARCH=$1
@@ -168,15 +164,12 @@ buildAndroid() {
     cd "${CURL_VERSION}"
     autoreconf -i -f
 
-    if [ $nohttp2 == "1" ]; then
+    if [ "$nohttp2" == "1" ]; then
         NGHTTP2CFG="--with-nghttp2=${NGHTTP2}/${ARCH}"
-        NGHTTP2LIB="-L${NGHTTP2}/${ARCH}/lib"
     fi
-    if [ $nohttp3 == "1" ]; then
-        NGHTTP3CFG="--with-nghttp3=${NGHTTP3}/${ARCH}"
-        NGHTTP3LIB="-L${NGHTTP3}/${ARCH}/lib"
-        NGTCP2CFG="--with-ngtcp2=${NGTCP2}/${ARCH}"
-        NGTCP2LIB="-L${NGTCP2}/${ARCH}/lib"
+    if [ "$nohttp3" == "1" ]; then
+        QUICHECFG="--with-quiche=${QUICHE}/${ARCH}"
+	OPENSSLCFG="--with-ssl ${PWD}/../quiche/quiche-build/${ARCH}/openssl"
     fi
 
     ./configure \
@@ -184,8 +177,7 @@ buildAndroid() {
         --enable-ipv6 \
         --with-pic \
         --with-random=/dev/urandom \
-        --with-ssl=/tmp/openssl-${ARCH} \
-        ${NGHTTP2CFG} ${NGHTTP3CFG} ${NGTCP2CFG} \
+        ${OPENSSLCFG} ${NGHTTP2CFG} ${QUICHECFG} \
         --host="$HOST" \
         --build=`dpkg-architecture -qDEB_BUILD_GNU_TYPE` \
         --prefix="${CURL}/${ARCH}" \
@@ -200,8 +192,8 @@ buildAndroid() {
         STRIP="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/${TOOLCHAIN}-strip" \
         CFLAGS="-arch ${ARCH} -pipe -Os" \
         CPPFLAGS="-fPIE -I$PREFIX/include" \
-        PKG_CONFIG_LIBDIR="${ANDROID_NDK_HOME}/prebuilt/linux-x86_64/lib/pkgconfig:/tmp/openssl-${ARCH}/lib/pkgconfig:${PWD}/../nghttp3/${ARCH}/lib/pkgconfig:${PWD}/../ngtcp2/${ARCH}/lib/pkgconfig" \
-        LDFLAGS="-arch ${ARCH} -fPIE -pie -L$PREFIX/lib -Wl,-rpath,/tmp/openssl-${ARCH}/lib" &> "/tmp/curl-${ARCH}.log"
+        PKG_CONFIG_LIBDIR="${ANDROID_NDK_HOME}/prebuilt/linux-x86_64/lib/pkgconfig:${PWD}/../nghttp2/${ARCH}/lib/pkgconfig:${PWD}/../quiche/quiche/target/release" \
+        LDFLAGS="-arch ${ARCH} -fPIE -pie -L$PREFIX/lib" &> "/tmp/curl-${ARCH}.log"
 
     make -j8 >> "/tmp/curl-${ARCH}.log" 2>&1
     make install >> "/tmp/curl-${ARCH}.log" 2>&1
@@ -231,6 +223,8 @@ buildAndroid x86 i686-pc-linux-gnu i686-linux-android i686-linux-android
 buildAndroid x86_64 x86_64-pc-linux-gnu x86_64-linux-android x86_64-linux-android
 buildAndroid arm arm-linux-androideabi armv7a-linux-androideabi arm-linux-androideabi
 buildAndroid arm64 aarch64-linux-android aarch64-linux-android aarch64-linux-android
+
+rm -rf "${CURL_VERSION}"
 
 #reset trap
 trap - INT TERM EXIT

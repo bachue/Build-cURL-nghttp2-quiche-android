@@ -121,6 +121,8 @@ checkTool()
 }
 
 checkTool pkg-config pkg-config
+checkTool curl curl
+checkTool dpkg-architecture dpkg-dev
 
 buildAndroid() {
     ARCH=$1
