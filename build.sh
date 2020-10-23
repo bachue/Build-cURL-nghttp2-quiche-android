@@ -135,7 +135,7 @@ else
     cd ..
 fi
 
-## Nghttp3 Build
+## Quiche Build
 if [ "$buildquiche" == "" ]; then
     QUICHE="NONE"
 else
