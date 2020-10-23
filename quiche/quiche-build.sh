@@ -41,7 +41,7 @@ usage ()
     echo
     echo -e "${bold}Usage:${normal}"
     echo
-    echo -e "  ${subbold}$0${normal} [-v ${dim}<nghttp2 version>${normal}] [-a ${dim}<Android API version>${normal}] [-n ${dim}<NDK version>${normal}] [-e ${dim}<EABI version>${normal}] [-x] [-h]"
+    echo -e "  ${subbold}$0${normal} [-v ${dim}<quiche version>${normal}] [-a ${dim}<Android API version>${normal}] [-n ${dim}<NDK version>${normal}] [-e ${dim}<EABI version>${normal}] [-x] [-h]"
     echo
     echo "         -v   version of quiche (default $QUICHE_VERNUM)"
     echo "         -n   NDK version (default $NDK_VERSION)"
