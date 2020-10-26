@@ -31,7 +31,7 @@ alertdim="\033[0m${red}\033[2m"
 # set trap to help debug build errors
 trap 'echo -e "${alert}** ERROR with Build - Check /tmp/quiche*.log${alertdim}"; tail -n 3 /tmp/quiche*.log' INT TERM EXIT
 
-QUICHE_VERNUM="0.5.1"
+QUICHE_VERNUM="0.6.0"
 NDK_VERSION="20b"
 ANDROID_EABI_VERSION="4.9"
 ANDROID_API_VERSION="21"
@@ -156,8 +156,13 @@ buildAndroid() {
     cargo ndk --target "$TARGET" --android-platform "$ANDROID_API_VERSION" -- build --release --features pkg-config-meta,qlog >> "/tmp/${QUICHE_VERNUM}-${ARCH}.log" 2>&1
     popd > /dev/null
 
+    mkdir -p "quiche-build/${ARCH}/"
+    cp -r quiche/deps/boringssl/src "quiche-build/${ARCH}/openssl"
     mkdir -p "quiche-build/${ARCH}/openssl/lib"
     cp "quiche/target/${TARGET}/release/libquiche.a" "quiche-build/${ARCH}"
+    cp "quiche/target/${TARGET}/release/libquiche.so" "quiche-build/${ARCH}"
+    cp "quiche/target/release/quiche.pc" "quiche-build/${ARCH}"
+    sed -i "s/libdir=.*/libdir=${PWD//\//\\/}\/quiche-build\/${ARCH}/" "quiche-build/${ARCH}/quiche.pc"
     cp $(find "quiche/target/${TARGET}/release/" -type f -name libssl.a -o -type f -name libcrypto.a) "quiche-build/${ARCH}/openssl/lib"
 }
 

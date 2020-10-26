@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # This script downloads and builds the Android libcurl library
 
@@ -100,21 +100,23 @@ if [ $nohttp2 == "1" ]; then
     NGHTTP2="${PWD}/../nghttp2"
 fi
 
+NGHTTP2CFG=""
+NGHTTP2LDFLAGS=""
 if [ $nohttp2 == "1" ]; then
     echo "Building with HTTP2 Support (nghttp2)"
 else
     echo "Building without HTTP2 Support (nghttp2)"
-    NGHTTP2CFG=""
 fi
 
 # HTTP3 support
+QUICHECFG=""
+QUICHECPPFLAGS=""
+QUICHELDFLAGS=""
 if [ $noquiche == "1" ]; then
-    QUICHE="${PWD}/../quiche-build"
-    NGTCP2="${PWD}/../ngtcp2"
+    QUICHE="${PWD}/../quiche/quiche-build"
     echo "Building with HTTP3 Support (quiche)"
 else
     echo "Building without HTTP3 Support (quiche)"
-    QUICHECFG=""
 fi
 
 CURL="${PWD}/../curl"
@@ -166,13 +168,18 @@ buildAndroid() {
 
     if [ "$nohttp2" == "1" ]; then
         NGHTTP2CFG="--with-nghttp2=${NGHTTP2}/${ARCH}"
+	NGHTTP2LDFLAGS="-L${NGHTTP2}/${ARCH}"
     fi
-    if [ "$nohttp3" == "1" ]; then
+    if [ "$noquiche" == "1" ]; then
         QUICHECFG="--with-quiche=${QUICHE}/${ARCH}"
-	OPENSSLCFG="--with-ssl ${PWD}/../quiche/quiche-build/${ARCH}/openssl"
+	QUICHECPPFLAGS="-I${QUICHE}/../quiche/include"
+	QUICHELDFLAGS="-L${QUICHE}/${ARCH}"
+	OPENSSLCFG="--with-ssl=${QUICHE}/${ARCH}/openssl"
     fi
 
     ./configure \
+	--enable-static \
+	--disable-shared \
         --enable-optimize \
         --enable-ipv6 \
         --with-pic \
@@ -190,10 +197,9 @@ buildAndroid() {
         NM="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/${TOOLCHAIN}-nm" \
         RANLIB="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/${TOOLCHAIN}-ranlib" \
         STRIP="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/${TOOLCHAIN}-strip" \
-        CFLAGS="-arch ${ARCH} -pipe -Os" \
-        CPPFLAGS="-fPIE -I$PREFIX/include" \
+        CPPFLAGS="-fPIE -I$PREFIX/include ${QUICHECPPFLAGS}" \
         PKG_CONFIG_LIBDIR="${ANDROID_NDK_HOME}/prebuilt/linux-x86_64/lib/pkgconfig:${PWD}/../nghttp2/${ARCH}/lib/pkgconfig:${PWD}/../quiche/quiche/target/release" \
-        LDFLAGS="-arch ${ARCH} -fPIE -pie -L$PREFIX/lib" &> "/tmp/curl-${ARCH}.log"
+        LDFLAGS="-fPIE -pie -L$PREFIX/lib ${NGHTTP2LDFLAGS} ${QUICHELDFLAGS}" &> "/tmp/curl-${ARCH}.log"
 
     make -j8 >> "/tmp/curl-${ARCH}.log" 2>&1
     make install >> "/tmp/curl-${ARCH}.log" 2>&1
@@ -219,8 +225,8 @@ unzip -qq "${CURL_VERSION}.zip"
 mv curl-master "$CURL_VERSION"
 
 echo "** Building libcurl **"
-buildAndroid x86 i686-pc-linux-gnu i686-linux-android i686-linux-android
-buildAndroid x86_64 x86_64-pc-linux-gnu x86_64-linux-android x86_64-linux-android
+buildAndroid x86 i686-pc-linux-android i686-linux-android i686-linux-android
+buildAndroid x86_64 x86_64-pc-linux-android x86_64-linux-android x86_64-linux-android
 buildAndroid arm arm-linux-androideabi armv7a-linux-androideabi arm-linux-androideabi
 buildAndroid arm64 aarch64-linux-android aarch64-linux-android aarch64-linux-android
 

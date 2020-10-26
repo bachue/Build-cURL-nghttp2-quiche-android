@@ -137,6 +137,7 @@ buildAndroid() {
     cd "${NGHTTP2_VERSION}"
 
     ./configure \
+        --enable-static \
         --disable-shared \
         --disable-app \
         --disable-threads \
