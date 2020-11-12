@@ -210,19 +210,16 @@ buildAndroid() {
 echo -e "${bold}Cleaning up${dim}"
 rm -rf "/tmp/${CURL_VERSION}-*" "${CURL_VERSION}"
 
-if [ ! -f "${CURL_VERSION}.zip" ]; then
-    echo "Downloading ${CURL_VERSION}.zip"
-    # curl -LO https://curl.haxx.se/download/${CURL_VERSION}.tar.gz
-    wget -O ${CURL_VERSION}.zip https://github.com/curl/curl/archive/master.zip
+if [ ! -f "${CURL_VERSION}.tar.gz" ]; then
+    echo "Downloading ${CURL_VERSION}.tar.gz"
+    curl -LO https://curl.haxx.se/download/${CURL_VERSION}.tar.gz
 else
-    echo "Using ${CURL_VERSION}.zip"
+    echo "Using ${CURL_VERSION}.tar.gz"
 fi
 
 rm -rf "${CURL_VERSION}"
 echo "Unpacking curl"
-# tar xfz "${CURL_VERSION}.tar.gz"
-unzip -qq "${CURL_VERSION}.zip"
-mv curl-master "$CURL_VERSION"
+tar xfz "${CURL_VERSION}.tar.gz"
 
 echo "** Building libcurl **"
 buildAndroid x86 i686-pc-linux-android i686-linux-android i686-linux-android

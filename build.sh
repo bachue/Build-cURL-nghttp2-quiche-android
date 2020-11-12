@@ -154,12 +154,19 @@ cd curl
 cd ..
 
 rm -rf build
-mkdir -p build/{x86,x86_64,arm,arm64}
 for ARCH in x86 x86_64 arm arm64 
 do
-    cp nghttp2/$ARCH/lib/libnghttp2.a build/$ARCH
-    cp quiche/quiche-build/$ARCH/libquiche.a build/$ARCH
-    cp quiche/quiche-build/$ARCH/openssl/lib/libcrypto.a build/$ARCH
-    cp quiche/quiche-build/$ARCH/openssl/lib/libssl.a build/$ARCH
-    cp curl/$ARCH/lib/libcurl.a build/$ARCH
+    RENAME_ARCH="$ARCH"
+    if [ "$ARCH" = "arm" ]; then
+	RENAME_ARCH="armeabi-v7a"
+    fi
+    if [ "$ARCH" = "arm64" ]; then
+	RENAME_ARCH="arm64-v8a"
+    fi
+    mkdir -p build/$RENAME_ARCH
+    cp nghttp2/$ARCH/lib/libnghttp2.a build/$RENAME_ARCH
+    cp quiche/quiche-build/$ARCH/libquiche.a build/$RENAME_ARCH
+    cp quiche/quiche-build/$ARCH/openssl/lib/libcrypto.a build/$RENAME_ARCH
+    cp quiche/quiche-build/$ARCH/openssl/lib/libssl.a build/$RENAME_ARCH
+    cp curl/$ARCH/lib/libcurl.a build/$RENAME_ARCH
 done
