@@ -176,6 +176,7 @@ else
     echo "Using quiche"
     (
         cd quiche 
+        git fetch
         git reset --hard "$QUICHE_VERNUM"
         cargo clean
     )
