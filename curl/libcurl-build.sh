@@ -210,16 +210,18 @@ buildAndroid() {
 echo -e "${bold}Cleaning up${dim}"
 rm -rf "/tmp/${CURL_VERSION}-*" "${CURL_VERSION}"
 
-if [ ! -f "${CURL_VERSION}.tar.gz" ]; then
-    echo "Downloading ${CURL_VERSION}.tar.gz"
-    curl -LO https://curl.haxx.se/download/${CURL_VERSION}.tar.gz
+if [ ! -f "${CURL_VERSION}.zip" ]; then
+    echo "Downloading ${CURL_VERSION}.zip"
+    # curl -LO https://curl.haxx.se/download/${CURL_VERSION}.tar.gz
+    curl -L -o "${CURL_VERSION}.zip" https://github.com/bachue/curl/archive/fix/stream_cap_less_than_overhead.zip
 else
-    echo "Using ${CURL_VERSION}.tar.gz"
+    echo "Using ${CURL_VERSION}.zip"
 fi
 
-rm -rf "${CURL_VERSION}"
 echo "Unpacking curl"
-tar xfz "${CURL_VERSION}.tar.gz"
+# tar xfz "${CURL_VERSION}.tar.gz"
+unzip "${CURL_VERSION}.zip"
+mv curl-fix-stream_cap_less_than_overhead "${CURL_VERSION}"
 
 echo "** Building libcurl **"
 buildAndroid x86 i686-pc-linux-android i686-linux-android i686-linux-android
