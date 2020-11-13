@@ -31,7 +31,7 @@ alertdim="\033[0m${red}\033[2m"
 # set trap to help debug build errors
 trap 'echo -e "${alert}** ERROR with Build - Check /tmp/quiche*.log${alertdim}"; tail -n 3 /tmp/quiche*.log' INT TERM EXIT
 
-QUICHE_VERNUM="0.6.0"
+QUICHE_VERNUM="v0.6.0"
 NDK_VERSION="20b"
 ANDROID_EABI_VERSION="4.9"
 ANDROID_API_VERSION="21"
@@ -171,7 +171,7 @@ rm -rf quiche-build /tmp/${QUICHE_VERSION}-*
 
 if [ ! -e quiche ]; then
     echo "Cloning quiche"
-    git clone -b "$QUICHE_VERNUM" --recursive https://github.com/cloudflare/quiche.git
+    git clone -b "$QUICHE_VERNUM" --recursive https://github.com/bachue/quiche.git
 else
     echo "Using quiche"
     (
