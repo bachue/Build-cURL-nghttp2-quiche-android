@@ -153,7 +153,7 @@ buildAndroid() {
 
     pushd . > /dev/null
     cd quiche
-    cargo ndk --target "$TARGET" --android-platform "$ANDROID_API_VERSION" -- build --release --features pkg-config-meta,qlog >> "/tmp/${QUICHE_VERNUM}-${ARCH}.log" 2>&1
+    cargo ndk --target "$TARGET" --android-platform "$ANDROID_API_VERSION" -- build --release --features pkg-config-meta,qlog >> "/tmp/${QUICHE_VERSION}-${ARCH}.log" 2>&1
     popd > /dev/null
 
     mkdir -p "quiche-build/${ARCH}/"
