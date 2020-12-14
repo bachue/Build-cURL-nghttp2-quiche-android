@@ -11,7 +11,7 @@
 # EDIT this section to Select Default Versions #
 ################################################
 
-LIBCURL="7.73.0"    # https://curl.haxx.se/download.html
+LIBCURL="7.74.0"    # https://curl.haxx.se/download.html
 NGHTTP2="1.41.0"    # https://nghttp2.org/
 QUICHE="v0.6.0"     # https://github.com/cloudflare/quiche.git
 
