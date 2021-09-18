@@ -31,7 +31,7 @@ alertdim="\033[0m${red}\033[2m"
 # set trap to help debug build errors
 trap 'echo -e "${alert}** ERROR with Build - Check /tmp/quiche*.log${alertdim}"; tail -n 3 /tmp/quiche*.log' INT TERM EXIT
 
-QUICHE_VERNUM="v0.6.0"
+QUICHE_VERNUM="v0.9.0/test/send_ping"
 NDK_VERSION="20b"
 ANDROID_EABI_VERSION="4.9"
 ANDROID_API_VERSION="21"
@@ -153,7 +153,7 @@ buildAndroid() {
 
     pushd . > /dev/null
     cd quiche
-    cargo ndk --target "$TARGET" --android-platform "$ANDROID_API_VERSION" -- build --release --features pkg-config-meta,qlog >> "/tmp/${QUICHE_VERSION}-${ARCH}.log" 2>&1
+    cargo ndk -t "$TARGET" -p "$ANDROID_API_VERSION" -- build --release --features ffi,pkg-config-meta,qlog >> "/tmp/${QUICHE_VERSION//\//-}-${ARCH}.log" 2>&1
     popd > /dev/null
 
     mkdir -p "quiche-build/${ARCH}/"
@@ -167,7 +167,7 @@ buildAndroid() {
 }
 
 echo -e "${bold}Cleaning up${dim}"
-rm -rf quiche-build /tmp/${QUICHE_VERSION}-*
+rm -rf quiche-build /tmp/${QUICHE_VERSION//\//-}-*
 
 if [ ! -e quiche ]; then
     echo "Cloning quiche"

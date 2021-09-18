@@ -11,9 +11,9 @@
 # EDIT this section to Select Default Versions #
 ################################################
 
-LIBCURL="7.74.0"    # https://curl.haxx.se/download.html
+LIBCURL="7.79.0"    # https://curl.haxx.se/download.html
 NGHTTP2="1.41.0"    # https://nghttp2.org/
-QUICHE="v0.6.0"     # https://github.com/cloudflare/quiche.git
+QUICHE="v0.9.0/test/size-optimization"     # https://github.com/cloudflare/quiche.git
 
 NDK_VERSION="20b"
 ANDROID_EABI_VERSION="4.9"

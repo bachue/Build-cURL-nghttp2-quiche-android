@@ -26,7 +26,7 @@ alertdim="\033[0m${red}\033[2m"
 # set trap to help debug any build errors
 trap 'echo -e "${alert}** ERROR with Build - Check /tmp/curl*.log${alertdim}"; tail -n 3 /tmp/curl*.log' INT TERM EXIT
 
-CURL_VERSION="curl-7.74.0"
+CURL_VERSION="curl-7.79.0"
 NDK_VERSION="20b"
 ANDROID_EABI_VERSION="4.9"
 ANDROID_API_VERSION="21"
@@ -213,15 +213,15 @@ rm -rf "/tmp/${CURL_VERSION}-*" "${CURL_VERSION}"
 if [ ! -f "${CURL_VERSION}.zip" ]; then
     echo "Downloading ${CURL_VERSION}.zip"
     # curl -LO https://curl.haxx.se/download/${CURL_VERSION}.tar.gz
-    curl -L -o "${CURL_VERSION}.zip" https://github.com/bachue/curl/archive/fix/stream_cap_less_than_overhead.zip
+    curl -L -o "${CURL_VERSION}.zip" https://github.com/bachue/curl/archive/test/send_ping.zip
 else
     echo "Using ${CURL_VERSION}.zip"
 fi
 
 echo "Unpacking curl"
 # tar xfz "${CURL_VERSION}.tar.gz"
-unzip "${CURL_VERSION}.zip"
-mv curl-fix-stream_cap_less_than_overhead "${CURL_VERSION}"
+unzip -o "${CURL_VERSION}.zip"
+mv curl-test-send_ping/ "${CURL_VERSION}"
 
 echo "** Building libcurl **"
 buildAndroid x86 i686-pc-linux-android i686-linux-android i686-linux-android
